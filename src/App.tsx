@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LoadingScreen from './components/common/LoadingScreen';
 import Sidebar from './components/layout/Sidebar';
@@ -8,19 +8,11 @@ import Reservations from './pages/Reservations';
 import FrontDesk from './pages/FrontDesk';
 import Rooms from './pages/Rooms';
 import SettingsPage from './pages/Settings';
+import { useAppContext } from './context/AppContext';
 
 function App() {
-  const [loading, setLoading] = useState(true);
+  const { loading } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  // Simulate app initialization
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 2500); // 2.5s for that premium feel
-    
-    return () => clearTimeout(timer);
-  }, []);
 
   if (loading) {
     return <LoadingScreen />;
