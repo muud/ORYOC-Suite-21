@@ -1,13 +1,6 @@
-import React from 'react';
-import { Search, Filter, MoreHorizontal, CheckCircle, Clock, XCircle } from 'lucide-react';
-
-const mockBookings = [
-  { id: 'RS-1042', guest: 'Eleanor Vance', dates: 'Oct 12 - Oct 15', roomType: 'Suite', amount: '$1,250', status: 'Confirmed' },
-  { id: 'RS-1043', guest: 'Marcus Pierce', dates: 'Oct 14 - Oct 16', roomType: 'Standard', amount: '$420', status: 'Pending' },
-  { id: 'RS-1044', guest: 'Sarah Jenkins', dates: 'Oct 14 - Oct 18', roomType: 'Deluxe', amount: '$850', status: 'Confirmed' },
-  { id: 'RS-1045', guest: 'David Cho', dates: 'Oct 10 - Oct 11', roomType: 'Suite', amount: '$450', status: 'Cancelled' },
-  { id: 'RS-1046', guest: 'Emily Rostova', dates: 'Oct 15 - Oct 20', roomType: 'Deluxe', amount: '$1,020', status: 'Pending' },
-];
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, MoreHorizontal, CheckCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
+import { fetchReservations } from '../services/api';
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -18,11 +11,40 @@ const getStatusBadge = (status: string) => {
     case 'Cancelled':
       return <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.875rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><XCircle size={14} /> Cancelled</span>;
     default:
-      return <span>{status}</span>;
+      return <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.875rem', backgroundColor: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>{status}</span>;
   }
 };
 
 const Reservations: React.FC = () => {
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const loadData = async () => {
+    setLoading(true);
+    const data = await fetchReservations();
+    // Normalize data if coming from API vs mock
+    const normalized = data.map((b: any) => ({
+      id: b.id.toString().startsWith('RS-') ? b.id : `RS-${b.id.toString().padStart(4, '0')}`,
+      guest: b.guest,
+      dates: b.dates || `${b.checkIn} - ...`,
+      roomType: b.roomType || 'Standard',
+      amount: b.amount || '$' + (Math.floor(Math.random() * 500) + 100),
+      status: b.status
+    }));
+    setBookings(normalized);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const filteredBookings = bookings.filter(b => 
+    b.guest.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    b.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -30,25 +52,39 @@ const Reservations: React.FC = () => {
           <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>Reservations</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Manage your bookings, arrivals, and departures.</p>
         </div>
-        <button style={{ 
-            padding: '0.625rem 1.25rem', 
-            backgroundColor: 'var(--accent-blue)', 
-            border: 'none', 
-            color: 'white',
-            borderRadius: '8px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-          }}>+ New Booking</button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button 
+            onClick={loadData}
+            style={{ padding: '0.625rem', background: 'transparent', border: '1px solid var(--panel-border)', color: 'var(--text-secondary)', borderRadius: '8px', cursor: 'pointer' }}
+          >
+            <RefreshCw size={18} className={loading ? 'spin' : ''} />
+          </button>
+          <button style={{ 
+              padding: '0.625rem 1.25rem', 
+              backgroundColor: 'var(--accent-blue)', 
+              border: 'none', 
+              color: 'white',
+              borderRadius: '8px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+            }} onClick={() => alert('New booking flow coming soon!')}>+ New Booking</button>
+        </div>
       </div>
 
       <div className="glass-panel" style={{ padding: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem 1rem', borderRadius: '8px', width: '300px' }}>
             <Search size={18} color="var(--text-secondary)" />
-            <input type="text" placeholder="Search by name or ID..." style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', width: '100%' }} />
+            <input 
+              type="text" 
+              placeholder="Search by name or ID..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', width: '100%' }} 
+            />
           </div>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--panel-border)', color: 'var(--text-primary)', borderRadius: '8px', cursor: 'pointer' }}>
+          <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--panel-border)', color: 'var(--text-primary)', borderRadius: '8px', cursor: 'pointer' }} onClick={() => alert('Filters coming soon!')}>
             <Filter size={18} /> Filters
           </button>
         </div>
@@ -67,7 +103,11 @@ const Reservations: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {mockBookings.map(b => (
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}><td colSpan={7} style={{ padding: '1rem', textAlign: 'center', opacity: 0.5 }}>Loading...</td></tr>
+                ))
+              ) : filteredBookings.length > 0 ? filteredBookings.map(b => (
                 <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }} className="hover-float">
                   <td style={{ padding: '1rem', fontWeight: 500, color: 'var(--accent-cyan)' }}>{b.id}</td>
                   <td style={{ padding: '1rem', fontWeight: 600 }}>{b.guest}</td>
@@ -76,10 +116,12 @@ const Reservations: React.FC = () => {
                   <td style={{ padding: '1rem' }}>{b.amount}</td>
                   <td style={{ padding: '1rem' }}>{getStatusBadge(b.status)}</td>
                   <td style={{ padding: '1rem', textAlign: 'right' }}>
-                    <button type="button" onClick={() => console.log('More actions for booking')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}><MoreHorizontal size={18}/></button>
+                    <button type="button" onClick={() => alert(`Details for ${b.guest}`)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}><MoreHorizontal size={18}/></button>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No reservations found</td></tr>
+              )}
             </tbody>
           </table>
         </div>

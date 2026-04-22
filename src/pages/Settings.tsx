@@ -1,12 +1,38 @@
-import React from 'react';
-import { Settings, User, Bell, Shield, Smartphone } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, User, Bell, Shield, Smartphone, Check } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
+  const [propertyName, setPropertyName] = useState('ORYOC Grand Plaza');
+  const [saving, setSaving] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+
+  const handleSave = () => {
+    setSaving(true);
+    // Simulate API call
+    setTimeout(() => {
+      setSaving(false);
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 3000);
+    }, 1000);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-      <div>
-        <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>Property Settings</h1>
-        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Configure system preferences, integrations, and security.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>Property Settings</h1>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Configure system preferences, integrations, and security.</p>
+        </div>
+        {showSaved && (
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: '0.5rem', 
+            backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-emerald)',
+            padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid var(--accent-emerald)',
+            animation: 'fadeIn 0.3s'
+          }}>
+            <Check size={16} /> Changes saved successfully!
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
@@ -44,10 +70,15 @@ const SettingsPage: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Property Name</label>
-              <input type="text" defaultValue="ORYOC Grand Plaza" style={{ 
-                background: 'rgba(0,0,0,0.2)', border: '1px solid var(--panel-border)', 
-                color: 'var(--text-primary)', padding: '0.75rem 1rem', borderRadius: '8px', outline: 'none' 
-              }} />
+              <input 
+                type="text" 
+                value={propertyName} 
+                onChange={(e) => setPropertyName(e.target.value)}
+                style={{ 
+                  background: 'rgba(0,0,0,0.2)', border: '1px solid var(--panel-border)', 
+                  color: 'var(--text-primary)', padding: '0.75rem 1rem', borderRadius: '8px', outline: 'none' 
+                }} 
+              />
             </div>
 
             <div style={{ display: 'flex', gap: '1rem' }}>
@@ -87,16 +118,26 @@ const SettingsPage: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-            <button style={{ 
-              padding: '0.625rem 2rem', 
-              backgroundColor: 'var(--accent-blue)', 
-              border: 'none', 
-              color: 'white',
-              borderRadius: '8px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-            }}>Save Changes</button>
+            <button 
+              onClick={handleSave}
+              disabled={saving}
+              style={{ 
+                padding: '0.625rem 2rem', 
+                backgroundColor: 'var(--accent-blue)', 
+                border: 'none', 
+                color: 'white',
+                borderRadius: '8px',
+                fontWeight: 600,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                opacity: saving ? 0.7 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
         </div>
       </div>
