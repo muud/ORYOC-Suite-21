@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Settings, User, Bell, Shield, Smartphone, Check } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, Smartphone, Check, Save } from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
 
 const SettingsPage: React.FC = () => {
-  const [propertyName, setPropertyName] = useState('ORYOC Grand Plaza');
+  const { settings, updateSettings } = useAppContext();
+  const [localSettings, setLocalSettings] = useState(settings);
   const [saving, setSaving] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
 
@@ -10,10 +12,15 @@ const SettingsPage: React.FC = () => {
     setSaving(true);
     // Simulate API call
     setTimeout(() => {
+      updateSettings(localSettings);
       setSaving(false);
       setShowSaved(true);
       setTimeout(() => setShowSaved(false), 3000);
     }, 1000);
+  };
+
+  const handleChange = (key: string, value: any) => {
+    setLocalSettings(prev => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -39,7 +46,7 @@ const SettingsPage: React.FC = () => {
         {/* Settings Navigation */}
         <div style={{ width: '250px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {[
-            { icon: <Settings size={18} />, label: 'General', active: true },
+            { icon: <SettingsIcon size={18} />, label: 'General', active: true },
             { icon: <User size={18} />, label: 'Account Profile', active: false },
             { icon: <Shield size={18} />, label: 'Security & Roles', active: false },
             { icon: <Bell size={18} />, label: 'Notifications', active: false },
@@ -72,8 +79,8 @@ const SettingsPage: React.FC = () => {
               <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Property Name</label>
               <input 
                 type="text" 
-                value={propertyName} 
-                onChange={(e) => setPropertyName(e.target.value)}
+                value={localSettings.propertyName} 
+                onChange={(e) => handleChange('propertyName', e.target.value)}
                 style={{ 
                   background: 'rgba(0,0,0,0.2)', border: '1px solid var(--panel-border)', 
                   color: 'var(--text-primary)', padding: '0.75rem 1rem', borderRadius: '8px', outline: 'none' 
@@ -84,10 +91,13 @@ const SettingsPage: React.FC = () => {
             <div style={{ display: 'flex', gap: '1rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                 <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Timezone</label>
-                <select style={{ 
-                  background: 'rgba(0,0,0,0.2)', border: '1px solid var(--panel-border)', 
-                  color: 'var(--text-primary)', padding: '0.75rem 1rem', borderRadius: '8px', outline: 'none', appearance: 'none'
-                }}>
+                <select 
+                  value={localSettings.timezone}
+                  onChange={(e) => handleChange('timezone', e.target.value)}
+                  style={{ 
+                    background: 'rgba(0,0,0,0.2)', border: '1px solid var(--panel-border)', 
+                    color: 'var(--text-primary)', padding: '0.75rem 1rem', borderRadius: '8px', outline: 'none', appearance: 'none'
+                  }}>
                   <option>Eastern Time (ET)</option>
                   <option>Pacific Time (PT)</option>
                   <option>UTC</option>
@@ -95,10 +105,13 @@ const SettingsPage: React.FC = () => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                 <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Currency</label>
-                <select style={{ 
-                  background: 'rgba(0,0,0,0.2)', border: '1px solid var(--panel-border)', 
-                  color: 'var(--text-primary)', padding: '0.75rem 1rem', borderRadius: '8px', outline: 'none', appearance: 'none'
-                }}>
+                <select 
+                  value={localSettings.currency}
+                  onChange={(e) => handleChange('currency', e.target.value)}
+                  style={{ 
+                    background: 'rgba(0,0,0,0.2)', border: '1px solid var(--panel-border)', 
+                    color: 'var(--text-primary)', padding: '0.75rem 1rem', borderRadius: '8px', outline: 'none', appearance: 'none'
+                  }}>
                   <option>USD ($)</option>
                   <option>EUR (€)</option>
                   <option>GBP (£)</option>
@@ -109,8 +122,20 @@ const SettingsPage: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Dark Mode Enforcement</label>
                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                 <div style={{ width: '50px', height: '26px', background: 'var(--accent-cyan)', borderRadius: '13px', position: 'relative', cursor: 'pointer' }}>
-                   <div style={{ width: '22px', height: '22px', background: 'white', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }} />
+                 <div 
+                   onClick={() => handleChange('darkModeEnforcement', !localSettings.darkModeEnforcement)}
+                   style={{ 
+                     width: '50px', height: '26px', 
+                     background: localSettings.darkModeEnforcement ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.1)', 
+                     borderRadius: '13px', position: 'relative', cursor: 'pointer',
+                     transition: 'all 0.3s'
+                   }}>
+                   <div style={{ 
+                     width: '22px', height: '22px', background: 'white', borderRadius: '50%', 
+                     position: 'absolute', top: '2px', 
+                     left: localSettings.darkModeEnforcement ? '26px' : '2px',
+                     transition: 'all 0.3s'
+                   }} />
                  </div>
                  <span style={{ fontSize: '0.875rem' }}>Force dark mode for all staff users</span>
                </div>
@@ -122,7 +147,7 @@ const SettingsPage: React.FC = () => {
               onClick={handleSave}
               disabled={saving}
               style={{ 
-                padding: '0.625rem 2rem', 
+                padding: '0.75rem 2rem', 
                 backgroundColor: 'var(--accent-blue)', 
                 border: 'none', 
                 color: 'white',
@@ -133,10 +158,10 @@ const SettingsPage: React.FC = () => {
                 opacity: saving ? 0.7 : 1,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
+                gap: '0.75rem'
               }}
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Saving...' : <><Save size={18} /> Save Changes</>}
             </button>
           </div>
         </div>

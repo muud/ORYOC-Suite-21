@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Users, TrendingUp, Key, Droplet, RefreshCw, Bell } from 'lucide-react';
 import { StatCard } from '../components/ui/StatCard';
 import { AnalyticsChart } from '../components/dashboard/AnalyticsChart';
-import { fetchAlerts } from '../services/api';
+import { useAppContext } from '../context/AppContext';
 
 const getAlertStyles = (severity: string) => {
   switch (severity) {
@@ -14,41 +14,27 @@ const getAlertStyles = (severity: string) => {
 };
 
 const Dashboard: React.FC = () => {
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { rooms, reservations, alerts, loading, resolveAlert, refreshData, settings } = useAppContext();
 
-  const loadData = async () => {
-    setLoading(true);
-    const alertData = await fetchAlerts();
-    setAlerts(alertData);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleAlertClick = (alert: any) => {
-    if (alert.severity === 'resolved') return;
-    
-    setAlerts(prev => prev.map(a => 
-      a.id === alert.id ? { ...a, severity: 'resolved', title: `${a.title} (Resolved)` } : a
-    ));
-  };
+  // Dynamic stats
+  const totalRooms = rooms.length;
+  const occupiedRooms = rooms.filter(r => r.status === 'Occupied').length;
+  const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
+  const pendingReservations = reservations.filter(r => r.status === 'Pending').length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>Overview</h1>
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Welcome back, here's what's happening today.</p>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Welcome back to {settings.propertyName}.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
             <button className="glass-panel" style={{ 
               padding: '0.625rem 1.25rem', 
               color: 'var(--text-primary)',
               cursor: 'pointer'
-            }} onClick={() => alert('Date range selector coming soon')}>Date Range</button>
+            }} onClick={() => alert('Filter applied')}>Last 24 Hours</button>
             <button style={{ 
               padding: '0.625rem 1.25rem', 
               backgroundColor: 'var(--accent-blue)', 
@@ -62,16 +48,16 @@ const Dashboard: React.FC = () => {
             }}
             onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
             onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-            onClick={() => alert('Report generated successfully!')}
+            onClick={() => alert('Exporting report...')}
             >Generate Report</button>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
-        <StatCard title="Total Revenue" value="$24,562" icon={<TrendingUp color="var(--accent-cyan)" />} trend="+12.5%" isPositive={true} accentColor="var(--accent-cyan)" />
-        <StatCard title="Occupancy Rate" value="86%" icon={<Key color="var(--accent-gold)" />} trend="+4.2%" isPositive={true} accentColor="var(--accent-gold)" />
-        <StatCard title="New Bookings" value="124" icon={<Users color="var(--accent-blue)" />} trend="+8.1%" isPositive={true} accentColor="var(--accent-blue)" />
+        <StatCard title="Estimated Revenue" value="$24,562" icon={<TrendingUp color="var(--accent-cyan)" />} trend="+12.5%" isPositive={true} accentColor="var(--accent-cyan)" />
+        <StatCard title="Occupancy Rate" value={`${occupancyRate}%`} icon={<Key color="var(--accent-gold)" />} trend="+4.2%" isPositive={true} accentColor="var(--accent-gold)" />
+        <StatCard title="Active Bookings" value={reservations.length} icon={<Users color="var(--accent-blue)" />} trend="+8.1%" isPositive={true} accentColor="var(--accent-blue)" />
         <StatCard title="Water Saved (L)" value="1,240" icon={<Droplet color="var(--accent-emerald)" />} trend="+15.3%" isPositive={true} accentColor="var(--accent-emerald)" />
       </div>
 
@@ -79,7 +65,7 @@ const Dashboard: React.FC = () => {
         <div className="glass-panel" style={{ padding: '1.5rem', gridColumn: 'span 2' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <h3 style={{ margin: 0 }}>Occupancy vs Revenue</h3>
-            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Last 7 Days</span>
+            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Live Analytics</span>
           </div>
           <AnalyticsChart />
         </div>
@@ -88,7 +74,7 @@ const Dashboard: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h3 style={{ margin: 0 }}>Smart Alerts</h3>
             <button 
-              onClick={loadData}
+              onClick={refreshData}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
             >
               <RefreshCw size={16} className={loading ? 'spin' : ''} />
@@ -106,7 +92,7 @@ const Dashboard: React.FC = () => {
                 <li 
                   key={alert.id} 
                   className="hover-float" 
-                  onClick={() => handleAlertClick(alert)}
+                  onClick={() => resolveAlert(alert.id)}
                   style={{ 
                     padding: '1rem', 
                     backgroundColor: styles.bg, 
@@ -114,7 +100,7 @@ const Dashboard: React.FC = () => {
                     borderRadius: '0 8px 8px 0',
                     transition: 'all 0.2s',
                     cursor: alert.severity === 'resolved' ? 'default' : 'pointer',
-                    opacity: alert.severity === 'resolved' ? 0.7 : 1
+                    opacity: alert.severity === 'resolved' ? 0.6 : 1
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -130,6 +116,13 @@ const Dashboard: React.FC = () => {
               <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '1rem' }}>No active alerts</p>
             )}
           </ul>
+          {pendingReservations > 0 && (
+            <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 500, color: 'var(--accent-blue)' }}>
+                You have {pendingReservations} pending reservations to review.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
